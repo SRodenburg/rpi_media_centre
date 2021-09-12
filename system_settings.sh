@@ -13,3 +13,31 @@ echo "deb http://deb.debian.org/debian buster-backports main" | sudo tee -a /etc
 sudo apt update
 sudo apt install -t buster-backports libseccomp2
 
+# Make sure that your USB device is mounted at /mnt/media/ and create these directories
+# /mnt/media  
+#     ├── appdata
+#     ├── downloads
+#     ├── movies
+#     ├── music
+#     ├── pictures
+#     └── tv_shows
+#
+# /mnt/media/appdata
+#     ├── jackett
+#     ├── lidarr
+#     ├── plex
+#     ├── radarr
+#     ├── sonarr
+#     ├── tautulli  # optional
+#     ├── bazarr
+#     └── transmission-openvpn
+mnt=/mnt/media
+libs='appdata downloads movies music pictures tv_shows'
+apps='jackett lidarr plex radarr sonarr tautulli bazarr transmission-openvpn'
+
+for d in $libs; do
+    mkdir "$mnt/$d"
+done;
+for a in $apps; do
+    mkdir "$mnt/appdata/$a"
+done;
