@@ -53,9 +53,6 @@ services:
 
   transmission-openvpn:
     image: haugene/transmission-openvpn:latest
-    # WARNING: SET VERSION TO 3.3 TO TROUBLESHOOT ARM-COMPATIBILITY ISSUES (https://github.com/haugene/docker-transmission-openvpn/issues/1726)
-    # PERMANENT SOLUTION: https://docs.linuxserver.io/faq#libseccomp
-    #image: haugene/transmission-openvpn:3.3
     restart: unless-stopped
     container_name: transmission-openvpn
     network_mode: host
@@ -180,6 +177,21 @@ services:
       # Music imported by lidarr is stored in /mnt/media/music directory on the host. lidarr sees this directory
       # as /music. Within lidarr make your root folder as /music
       - /mnt/media/music:/music
+
+  bazarr:
+    image: linuxserver/bazarr
+    restart: unless-stopped
+    container_name: bazarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Amsterdam
+    volumes:
+      - /mnt/media/appdata/bazarr/config:/config
+      - /mnt/media/movies/:/movies #optional
+      - /mnt/media/tv_shows/:/tv #optional
+    ports:
+      - 6767:6767
 
 #  tautulli:
 #    image: linuxserver/tautulli:latest
