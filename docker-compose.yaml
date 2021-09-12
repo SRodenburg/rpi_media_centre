@@ -5,7 +5,7 @@ x-extra_hosts:
   # configure the transmission client url as http://pi:9091
   &pi
   # Change this to IP of your RPi
-  - "pi:192.168.4.4"
+  - "pi:192.168.178.60"
 services:
   # All the services use docker bind mounts to store config data and media on the host's filesystem. If you're familiar with
   # docker storage, you can use whatever you want. You can change it to use docker volumes if you want.
@@ -27,7 +27,7 @@ services:
   # change the mapping between host ports and container ports. Port mapping is in the format <host_port>:<container_port>
   plex:
     image: linuxserver/plex:latest
-    restart: always
+    restart: unless-stopped
     container_name: plex
     network_mode: host
     extra_hosts: *pi
@@ -40,8 +40,8 @@ services:
       - "/dev/dri:/dev/dri"
     environment:
       # The container is run as the user with this PUID and PGID (user and group id).
-      - PUID=1001
-      - PGID=1001
+      - PUID=1000
+      - PGID=1000
     volumes:
       # Docker bind mounts are used to store config and media on the host's filesystem. Config for plex will be stored
       # in /mnt/media/appdata/plex/config directory and any transcoding data is stored in a transcode directory
@@ -53,26 +53,29 @@ services:
 
   transmission-openvpn:
     image: haugene/transmission-openvpn:latest
-    restart: always
+    # WARNING: SET VERSION TO 3.3 TO TROUBLESHOOT ARM-COMPATIBILITY ISSUES (https://github.com/haugene/docker-transmission-openvpn/issues/1726)
+    # PERMANENT SOLUTION: https://docs.linuxserver.io/faq#libseccomp
+    #image: haugene/transmission-openvpn:3.3
+    restart: unless-stopped
     container_name: transmission-openvpn
     network_mode: host
     extra_hosts: *pi
     environment:
       # The container is run as the user with this PUID and PGID (user and group id).
-      - PUID=1001
-      - PGID=1001
+      - PUID=1000
+      - PGID=1000
       # To run this container, you would need an openvpn provider. I use IPVANISH and hence in here that is used as an
       # example. Please look at the documentation to understand each of the config variables.
       # Documentation: https://haugene.github.io/docker-transmission-openvpn/
       - TRANSMISSION_WEB_UI=transmission-web-control
-      - OPENVPN_PASSWORD=openvpn_provider_password
-      - OPENVPN_USERNAME=openvpn_provider_username
+      - OPENVPN_PASSWORD=m
+      - OPENVPN_USERNAME=9189723277099135
       - OPENVPN_OPTS=--inactive 3600 --ping 10 --ping-exit 60
-      - LOCAL_NETWORK=192.168.4.0/24
-      - OPENVPN_PROVIDER=IPVANISH
+      - LOCAL_NETWORK=192.168.178.60/24
+      - OPENVPN_PROVIDER=MULLVAD
       - CREATE_TUN_DEVICE=true
       # Change these to which vpn endpoints you want to connect to. More info in documentation
-      - OPENVPN_CONFIG=ipvanish-UK-London-lon-a05,ipvanish-UK-London-lon-a33,ipvanish-UK-Manchester-man-c06,ipvanish-NL-Amsterdam-ams-a08
+      - OPENVPN_CONFIG=es_all
       # Below are just some variable to configure transmission. Configure them to whatever is best for your setup
       - TRANSMISSION_DOWNLOAD_QUEUE_SIZE=5
       - TRANSMISSION_IDLE_SEEDING_LIMIT=30
@@ -91,9 +94,10 @@ services:
       # transmission will see that as /data directory
       - /mnt/media/downloads:/data
 
+
   jackett:
     image: linuxserver/jackett:latest
-    restart: always
+    restart: unless-stopped
     container_name: jackett
     extra_hosts: *pi
     ports:
@@ -101,9 +105,9 @@ services:
       - "9117:9117"
     environment:
       # The container is run as the user with this PUID and PGID (user and group id).
-      - PUID=1001
-      - PGID=1001
-      - TZ=Europe/London
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Amsterdam
     volumes:
       - /mnt/media/appdata/jackett:/config
       - /mnt/media/downloads:/downloads
@@ -120,7 +124,7 @@ services:
       # The container is run as the user with this PUID and PGID (user and group id).
       - PUID=1001
       - PGID=1001
-      - TZ=Europe/London
+      - TZ=Europe/Amsterdam
     volumes:
       # Radarr needs to know where the downloaded media is. This is told to radarr by transmission
       - /mnt/media/downloads:/downloads
@@ -141,9 +145,9 @@ services:
       - "8989:8989"
     environment:
       # The container is run as the user with this PUID and PGID (user and group id).
-      - PUID=1001
-      - PGID=1001
-      - TZ=Europe/London
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Amsterdam
     volumes:
       # sonarr needs to know where the downloaded media is. This is told to sonarr by transmission
       - /mnt/media/downloads:/downloads
@@ -166,7 +170,7 @@ services:
       # The container is run as the user with this PUID and PGID (user and group id).
       - PUID=1000
       - PGID=1000
-      - TZ=Europe/London
+      - TZ=Europe/Amsterdam
     volumes:
       # lidarr needs to know where the downloaded media is. This is told to lidarr by transmission
       - /mnt/media/downloads:/downloads
@@ -177,25 +181,25 @@ services:
       # as /music. Within lidarr make your root folder as /music
       - /mnt/media/music:/music
 
-  tautulli:
-    image: linuxserver/tautulli:latest
-    restart: always
-    container_name: tautulli
-    extra_hosts: *pi
-    ports:
-      # Host port 8181 is mapped to container port 8181
-      - "8181:8181"
-    environment:
-      # The container is run as the user with this PUID and PGID (user and group id).
-      - PUID=1001
-      - PGID=1001
-      - TZ=Europe/London
-    volumes:
-      # config directory
-      - /mnt/media/appdata/tautulli:/config
-      # Tautulli needs access to plex logs. In the plex container we mounted /mnt/media/appdata/plex of the host as the
-      # config directory for plex. Logs are located within this config directory
-      - /mnt/media/appdata/plex/config/Library/Application Support/Plex Media Server/Logs:/logs
+#  tautulli:
+#    image: linuxserver/tautulli:latest
+#    restart: always
+#    container_name: tautulli
+#    extra_hosts: *pi
+#    ports:
+#      # Host port 8181 is mapped to container port 8181
+#      - "8181:8181"
+#    environment:
+#      # The container is run as the user with this PUID and PGID (user and group id).
+#      - PUID=1000
+#      - PGID=1000
+#      - TZ=Europe/London
+#    volumes:
+#      # config directory
+#      - /mnt/media/appdata/tautulli:/config
+#      # Tautulli needs access to plex logs. In the plex container we mounted /mnt/media/appdata/plex of the host as the
+#      # config directory for plex. Logs are located within this config directory
+#      - /mnt/media/appdata/plex/config/Library/Application Support/Plex Media Server/Logs:/logs
 
   # Sonarr at present does not support netimport lists like Radarr does. On Radarr you can setup it up to import movies
   # from Lists like IMDB lists or themoviedb.org lists. Using these lists, you can just add the movies you want to
@@ -205,48 +209,48 @@ services:
   # API KEY. You would need these to use this service. Once this service is setup, any TV shows that you add to your
   # favourites list will be fetched at the SYNC_INTERVAL and added to sonarr. Sonarr then would start downloading and
   # managing this TV show
-  sonarr_netimport:
-    image: thundermagic/sonarr_netimport:latest
-    restart: always
-    container_name: sonarr_netimport
-    extra_hosts: *pi
-    environment:
-      - TVDB_USERNAME=first.lastb1q
-      - TVDB_USER_KEY=user_key
-      - TVDB_API_KEY=tvdb_api_key
-      # IP address and port number where sonarr can be accessed
-      - SONARR_IP=192.168.4.4
-      - SONARR_PORT=8989
-      # Sonarr app API key. This is on sonarr under settings>general
-      - SONARR_API_KEY=sonarr_api_key
-      - SYNC_INTERVAL=3600  # Interval at which to sync with TVDB, in seconds
-      - SEARCH_MISSING_EPISODES=1  # 1 is True
-      - QUALITY_PROFILE_ID=1  # 1 is profile any
-      - MONITORED=1  # 1 is True
-      - ROOT_FOLDER_PATH=/tv/  # Full path of root folder
-      # Below variables are for sending error notification emails. If not needed, delete these
-      - EMAIL_ADDRESS=first.last@gmail.com
-      - EMAIL_PASSWORD=email_password
-      - EMAIL_TO_ADDRESS=first.last@gmail.com
-      - SMTP_SERVER=smtp.gmail.com
-      - SMTP_SERVER_PORT=587
+#  sonarr_netimport:
+#    image: thundermagic/sonarr_netimport:latest
+#    restart: always
+#    container_name: sonarr_netimport
+#    extra_hosts: *pi
+#    environment:
+#      - TVDB_USERNAME=first.lastb1q
+#      - TVDB_USER_KEY=user_key
+#      - TVDB_API_KEY=tvdb_api_key
+#      # IP address and port number where sonarr can be accessed
+#      - SONARR_IP=192.168.4.4
+#      - SONARR_PORT=8989
+#      # Sonarr app API key. This is on sonarr under settings>general
+#      - SONARR_API_KEY=sonarr_api_key
+#      - SYNC_INTERVAL=3600  # Interval at which to sync with TVDB, in seconds
+#      - SEARCH_MISSING_EPISODES=1  # 1 is True
+#      - QUALITY_PROFILE_ID=1  # 1 is profile any
+#      - MONITORED=1  # 1 is True
+#      - ROOT_FOLDER_PATH=/tv/  # Full path of root folder
+#      # Below variables are for sending error notification emails. If not needed, delete these
+#      - EMAIL_ADDRESS=first.last@gmail.com
+#      - EMAIL_PASSWORD=email_password
+#      - EMAIL_TO_ADDRESS=first.last@gmail.com
+#      - SMTP_SERVER=smtp.gmail.com
+#      - SMTP_SERVER_PORT=587
 
   # Similar to sonarr_netimport but for radarr. Radarr has this feature built-in but radarr uses TMDB API v3 and
   # I have noticed that if using v3 API, TMDB only returns maximum of 500 movies in the list.
   # This is resolved if using TMDB API v4.
-  radarr_netimport:
-    image: thundermagic/radarr_netimport:latest
-    restart: on-failure
-    container_name: radarr_netimport
-    environment:
-      - TMDB_ACCESS_TOKEN=sampletoken
-      - TMDB_API_KEY=tvdb_api_key
-      - TMDB_LIST_ID=12345
-      # IP address and port number where radarr can be accessed
-      - RADARR_IP=192.168.4.4
-      - RADARR_PORT=7878
-      # radarr API key. This is on radarr under settings>general
-      - RADARR_API_KEY=radarr_api_key
-      - SYNC_INTERVAL=3600  # Interval at which to sync with TMDB, in seconds
-      - QUALITY_PROFILE_ID=1  # 1 is profile any
-      - ROOT_FOLDER_PATH=/movies/  # Full path of root folder
+#  radarr_netimport:
+#    image: thundermagic/radarr_netimport:latest
+#    restart: on-failure
+#    container_name: radarr_netimport
+#    environment:
+#      - TMDB_ACCESS_TOKEN=sampletoken
+#      - TMDB_API_KEY=tvdb_api_key
+#      - TMDB_LIST_ID=12345
+#      # IP address and port number where radarr can be accessed
+#      - RADARR_IP=192.168.4.4
+#      - RADARR_PORT=7878
+#      # radarr API key. This is on radarr under settings>general
+#      - RADARR_API_KEY=radarr_api_key
+#      - SYNC_INTERVAL=3600  # Interval at which to sync with TMDB, in seconds
+#      - QUALITY_PROFILE_ID=1  # 1 is profile any
+#      - ROOT_FOLDER_PATH=/movies/  # Full path of root folder
